@@ -1,0 +1,14 @@
+sudo: required
+language: generic
+services:
+  - docker
+env:
+  global:
+    - DOCKER="sfalexrog/openhd-builder:latest"
+git:
+  depth: 50
+
+before_script:
+  - docker pull ${DOCKER}
+script:
+  - docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh'
