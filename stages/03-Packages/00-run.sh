@@ -1,6 +1,3 @@
-# Make sure binfmt_misc is populated
-dpkg-reconfigure binfmt-support
-
 # Do this to the WORK folder of this stage
 pushd ${STAGE_WORK_DIR}
 
