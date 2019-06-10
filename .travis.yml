@@ -7,8 +7,24 @@ env:
     - DOCKER="sfalexrog/openhd-builder:latest"
 git:
   depth: 50
-
-before_script:
-  - docker pull ${DOCKER}
-script:
-  - docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh'
+jobs:
+  include:
+    - stage: Kernel
+      name: "Build patched kernel"
+      before_script:
+        - docker pull ${DOCKER}
+# Hack: put SKIP-files in all directories after kernel build
+        - touch stages/03-Packages/SKIP
+        - touch stages/04-Wifibroadcast/SKIP
+      script:
+        - docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh'
+    - stage: Userspace
+      name: "Add userspace stuff"
+      before_script:
+        - docker pull ${DOCKER}
+# Hack: don't build kernel (TODO: fetch image with kernel)
+        - touch stages/00-Prerequisites/SKIP
+        - touch stages/01-Baseimage/SKIP
+        - touch stages/02-Kernel/SKIP
+      script:
+        - docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh'
