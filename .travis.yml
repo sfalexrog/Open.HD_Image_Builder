@@ -17,15 +17,20 @@ jobs:
         - touch stages/03-Packages/SKIP
         - touch stages/04-Wifibroadcast/SKIP
       script:
-        - docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh'
+        - .ci/check_stage1.sh
+        - if [[ -z "${SKIP_BUILD}" ]]; then
+            docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh';
+          fi
       after_script:
         - git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
         - git fetch --unshallow
         - export KERNEL_VERSION=$(git log --format=%h -1 stages/00-Prerequisites stages/01-Baseimage stages/02-Kernel)
         # FIXME: this does not work for deployments
         # - find deploy/ -name "*.img" -exec mv {} deploy/kernel_${KERNEL_VERSION}.img +
-        - mv work/02-Kernel/IMAGE.img kernel_${KERNEL_VERSION}.img
+        - sudo mv work/02-Kernel/IMAGE.img kernel_${KERNEL_VERSION}.img
+        - sudo chmod a+rw kernel_${KERNEL_VERSION}.img
         - docker run --rm -v $(pwd):/root ${DOCKER} xz -v -z /root/kernel_${KERNEL_VERSION}.img
+        - .ci/upload_stage1.sh
     - stage: Userspace
       name: "Add userspace stuff"
       before_script:
