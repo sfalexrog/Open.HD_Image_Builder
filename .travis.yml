@@ -58,12 +58,12 @@ jobs:
           fi
       before_deploy:
         - sudo find deploy/ -name "*.img" -exec mv {} deploy/openhd.img \;
-        - sudo chmod a+rw deploy/*
-        - docker run --rm -v $(pwd):/root ${DOCKER} xz -v -z /root/deploy/openhd.img
+        - sudo chmod -R a+rw deploy
+        - zip deploy/openhd.img.zip deploy/openhd.img
       deploy:
         provider: releases
         api_key: ${GITHUB_OAUTH_TOKEN}
-        file: deploy/openhd.img.xz
+        file: deploy/openhd.img.zip
         skip_cleanup: true
         on:
           tags: true
