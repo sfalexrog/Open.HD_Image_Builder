@@ -18,7 +18,7 @@ jobs:
         - touch stages/04-Wifibroadcast/SKIP
       script:
         - .ci/check_stage1.sh
-        - if [[ -z "${SKIP_BUILD}" ]]; then
+        - if [[ "$(find . -maxdepth 1 -name 'kernel_*.img.xz' | wc -l)" -eq "0" ]]; then
             docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh';
           fi
       after_script:
@@ -38,7 +38,7 @@ jobs:
         - git fetch --unshallow
         - export KERNEL_VERSION=$(git log --format=%h -1 stages/00-Prerequisites stages/01-Baseimage stages/02-Kernel)
         - .ci/check_stage2.sh
-        - if [[ -z "${SKIP_BUILD}" ]]; then
+        - if [[ "$(find . -maxdepth 1 -name 'kernel_*.img.xz' | wc -l)" -ne "0" ]]; then
             docker pull ${DOCKER};
           fi
 # Hack: don't build kernel (TODO: fetch image with kernel)
@@ -46,8 +46,10 @@ jobs:
         - touch stages/01-Baseimage/SKIP
         - touch stages/02-Kernel/SKIP
       script:
-        - if [[ -z "${SKIP_BUILD}" ]]; then
+        - if [[ "$(find . -maxdepth 1 -name 'kernel_*.img.xz' | wc -l)" -ne "0" ]]; then
             docker run --rm -v $(pwd):/root ${DOCKER} xz -v -d /root/kernel_${KERNEL_VERSION}.img.xz;
+            chmod a+rw kernel_${KERNEL_VERSION}.img;
+            mkdir -p work/02-Kernel;
             sudo mv kernel_${KERNEL_VERSION}.img work/02-Kernel/IMAGE.img;
             docker run --privileged --rm -v /dev:/dev -v $(pwd):/root ${DOCKER} /bin/bash -c 'cd /root; ./buildwithlog.sh';
           else
@@ -55,7 +57,7 @@ jobs:
             exit 1;
           fi
       before_deploy:
-        - sudo find deploy/ -name "*.img" -exec mv {} deploy/openhd.img +
+        - sudo find deploy/ -name "*.img" -exec mv {} deploy/openhd.img \;
         - sudo chmod a+rw deploy/*
         - docker run --rm -v $(pwd):/root ${DOCKER} xz -v -z /root/deploy/openhd.img
       deploy:
